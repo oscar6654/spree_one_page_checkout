@@ -1,14 +1,30 @@
 module Spree
+
   CheckoutController.class_eval do
-    before_filter :check_logged_in_user, :only => [:registration, :update_registration]
+  # Updates the order and advances to the next state (when possible.)
+    def update
+      if @order.update_from_params(params, permitted_checkout_attributes, request.headers.env)
+        @order.temporary_address = !params[:save_user_address]
+        unless @order.next
+          flash[:error] = @order.errors.full_messages.join("\n")
+          redirect_to(checkout_state_path(@order.state)) && return
+        end
 
-    private
-      def check_logged_in_user
-        # Skip the login step if user already logged in
-        redirect_to spree.checkout_path if current_spree_user or current_order.email.present?
-
-        # Skip the login step if not enabled
-        redirect_to spree.checkout_path unless Spree::Auth::Config[:registration_step]
+        if @order.completed?
+          @current_order = nil
+          flash.notice = Spree.t(:order_processed_successfully)
+          flash['order_completed'] = true
+          redirect_to completion_route
+        else
+          respond_to do |format|
+            format.html { redirect_to checkout_state_path(@order.state) }
+            format.js { render :action => "edit" }
+          end
+        end
+      else
+        render :edit
       end
+    end
   end
+
 end

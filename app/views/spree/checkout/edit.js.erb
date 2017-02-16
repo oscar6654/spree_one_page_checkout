@@ -1,0 +1,11 @@
+var error, partial, step;
+partial = "<%=j render :partial => 'form_wrapper', :format => :html, :locals => { :state => @order.state, :order => @order } %>";
+step = $('#checkout_<%= @order.state %>');
+$("#checkout_delivery").show();
+error = "<%= flash[:error] %>";
+SpreeOnePageCheckout.replaceCheckoutStep(step, partial, error);
+// Refresh minicart count
+$("#link-to-cart a").replaceWith('<%= escape_javascript link_to_cart %>')
+
+// Refresh minicart line items
+$("#minicart").replaceWith('<%= escape_javascript render("spree/shared/minicart") %>')
